@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Markov Chain Generator</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      margin: 0;
+      padding: 2rem;
+      background: #1a1a1a;
+      color: #e0e0e0;
+      min-height: 100vh;
+    }
+
+    header {
+      max-width: 1400px;
+      margin: 0 auto 1.5rem;
+    }
+
+    h1 {
+      margin-bottom: 1rem;
+      font-weight: 500;
+    }
+
+    .main-container {
+      display: flex;
+      gap: 2rem;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .left-panel, .right-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-label {
+      font-size: 0.85rem;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+    }
+
+    .dashboard {
+      background: #222;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .controls {
+      display: flex;
+      gap: 2rem;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    label {
+      font-size: 0.85rem;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .mode-toggle {
+      display: flex;
+      background: #2a2a2a;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .mode-toggle button {
+      padding: 0.6rem 1.2rem;
+      border: none;
+      background: transparent;
+      color: #888;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.15s;
+    }
+
+    .mode-toggle button.active {
+      background: #3a3a3a;
+      color: #fff;
+    }
+
+    .mode-toggle button:hover:not(.active) {
+      color: #bbb;
+    }
+
+    input[type="range"] {
+      width: 150px;
+      height: 6px;
+      -webkit-appearance: none;
+      background: #2a2a2a;
+      border-radius: 3px;
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      background: #fff;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .slider-value {
+      font-size: 1.5rem;
+      font-weight: 600;
+      min-width: 2rem;
+    }
+
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    textarea {
+      width: 100%;
+      flex: 1;
+      min-height: 400px;
+      padding: 1rem;
+      border: 1px solid #333;
+      border-radius: 8px;
+      background: #222;
+      color: #e0e0e0;
+      font-family: inherit;
+      font-size: 0.95rem;
+      resize: none;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: #555;
+    }
+
+    textarea::placeholder {
+      color: #555;
+    }
+
+    .output-container {
+      background: #222;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 1.5rem;
+      height: 400px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column-reverse;
+    }
+
+    .output-wrapper {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      min-height: 100%;
+    }
+
+    #output {
+      font-family: 'Georgia', serif;
+      font-size: 1.2rem;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    .cursor {
+      display: inline-block;
+      width: 2px;
+      height: 1.2em;
+      background: #fff;
+      margin-left: 2px;
+      animation: blink 0.8s infinite;
+      vertical-align: text-bottom;
+    }
+
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
+    }
+
+    .buttons {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    button.action {
+      padding: 0.7rem 1.5rem;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    button.primary {
+      background: #fff;
+      color: #1a1a1a;
+    }
+
+    button.primary:hover {
+      background: #ddd;
+    }
+
+    button.secondary {
+      background: #333;
+      color: #e0e0e0;
+    }
+
+    button.secondary:hover {
+      background: #444;
+    }
+
+    .status {
+      font-size: 0.85rem;
+      color: #666;
+      margin-top: 1rem;
+    }
+
+    @media (max-width: 900px) {
+      .main-container {
+        flex-direction: column;
+      }
+      
+      textarea, .output-container {
+        min-height: 250px;
+      }
+    }
+
+    /* Visualization Panel */
+    .viz-section {
+      max-width: 1400px;
+      margin: 2rem auto 0;
+    }
+
+    .viz-panel {
+      background: #222;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 1.5rem;
+      min-height: 400px;
+      overflow: hidden;
+    }
+
+    .viz-content {
+      display: flex;
+      align-items: flex-start;
+      gap: 0;
+      min-height: 320px;
+    }
+
+    /* Trail Section (left side) */
+    .trail-section {
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .trail-nodes {
+      display: flex;
+      align-items: center;
+      gap: 0;
+    }
+
+    .trail-node {
+      display: flex;
+      align-items: center;
+    }
+
+    .trail-token {
+      background: #2a2a2a;
+      border: 2px solid #444;
+      border-radius: 6px;
+      padding: 0.5rem 0.75rem;
+      font-family: 'Georgia', serif;
+      font-size: 0.95rem;
+      color: #999;
+      white-space: nowrap;
+      transition: all 0.3s ease;
+      max-width: 120px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .trail-token.context {
+      background: #2a3a4a;
+      border-color: #4a7a9a;
+      color: #8ac;
+    }
+
+    .trail-connector {
+      width: 20px;
+      height: 2px;
+      background: #444;
+      flex-shrink: 0;
+    }
+
+    .trail-token.context + .trail-connector {
+      background: #4a7a9a;
+    }
+
+    /* Decision Point Section (right side) */
+    .decision-section {
+      display: flex;
+      align-items: flex-start;
+      min-width: 0;
+    }
+
+    .decision-connector {
+      width: 20px;
+      height: 2px;
+      background: #444;
+      flex-shrink: 0;
+      align-self: center;
+      margin-top: 0;
+    }
+
+    .decision-point {
+      display: flex;
+      align-items: flex-start;
+    }
+
+    .decision-node-wrapper {
+      display: flex;
+      align-items: flex-start;
+      padding-top: 0;
+    }
+
+    .decision-node {
+      background: #333;
+      border: 2px dashed #555;
+      border-radius: 6px;
+      padding: 0.5rem 0.75rem;
+      font-family: 'Georgia', serif;
+      font-size: 0.95rem;
+      color: #666;
+      white-space: nowrap;
+      transition: all 0.3s ease;
+    }
+
+    .decision-node.decided {
+      background: #2a4a2a;
+      border: 2px solid #4a9a4a;
+      color: #8c8;
+      animation: pulse-green 0.5s ease;
+    }
+
+    @keyframes pulse-green {
+      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(74, 154, 74, 0.7); }
+      50% { transform: scale(1.05); box-shadow: 0 0 20px 5px rgba(74, 154, 74, 0.4); }
+      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(74, 154, 74, 0); }
+    }
+
+    /* Branching Candidates */
+    .candidates-area {
+      position: relative;
+      margin-left: 10px;
+      display: flex;
+      align-items: flex-start;
+    }
+
+    .branch-lines {
+      position: absolute;
+      left: -10px;
+      top: 0;
+      width: 50px;
+      height: 100%;
+      pointer-events: none;
+      overflow: visible;
+    }
+
+    .branch-line {
+      stroke: #444;
+      stroke-width: 2;
+      fill: none;
+      transition: stroke 0.3s ease;
+    }
+
+    .branch-line.selected {
+      stroke: #4a9a4a;
+      stroke-width: 3;
+    }
+
+    .candidates-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      margin-left: 40px;
+      max-height: 300px;
+      overflow-y: auto;
+      padding-right: 0.5rem;
+    }
+
+    .candidate {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      opacity: 0;
+      transform: translateX(-10px);
+      animation: candidate-appear 0.2s ease forwards;
+    }
+
+    @keyframes candidate-appear {
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .candidate-token {
+      background: #2a2a2a;
+      border: 2px solid #444;
+      border-radius: 6px;
+      padding: 0.5rem 0.75rem;
+      font-family: 'Georgia', serif;
+      font-size: 0.95rem;
+      color: #888;
+      min-width: 40px;
+      text-align: center;
+      white-space: nowrap;
+      max-width: 120px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: all 0.3s ease;
+    }
+
+    .candidate.selected .candidate-token {
+      background: #2a4a2a;
+      border-color: #4a9a4a;
+      color: #8c8;
+    }
+
+    .frequency-bar-container {
+      width: 80px;
+      height: 12px;
+      background: #1a1a1a;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .frequency-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #4a6a8a, #6a8aaa);
+      border-radius: 3px;
+      transition: width 0.3s ease, background 0.3s ease;
+    }
+
+    .candidate.selected .frequency-bar {
+      background: linear-gradient(90deg, #4a9a4a, #6aba6a);
+    }
+
+    .frequency-label {
+      font-size: 0.75rem;
+      color: #666;
+      min-width: 35px;
+    }
+
+    /* Empty state */
+    .viz-empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 320px;
+      color: #555;
+      font-style: italic;
+    }
+
+    /* Scrollbar styling for candidates */
+    .candidates-list::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .candidates-list::-webkit-scrollbar-track {
+      background: #1a1a1a;
+      border-radius: 3px;
+    }
+
+    .candidates-list::-webkit-scrollbar-thumb {
+      background: #444;
+      border-radius: 3px;
+    }
+
+    .candidates-list::-webkit-scrollbar-thumb:hover {
+      background: #555;
+    }
+
+    /* Token sliding animation */
+    .trail-node.entering {
+      animation: slide-in 0.3s ease;
+    }
+
+    @keyframes slide-in {
+      from {
+        opacity: 0;
+        transform: translateX(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .trail-node.exiting {
+      animation: slide-out 0.3s ease forwards;
+    }
+
+    @keyframes slide-out {
+      to {
+        opacity: 0;
+        transform: translateX(-20px);
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Markov Chain Generator</h1>
+
+    <div class="dashboard">
+      <div class="controls">
+        <div class="control-group">
+          <label>Mode</label>
+          <div class="mode-toggle">
+            <button id="mode-word" class="active">Word</button>
+            <button id="mode-char">Char</button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label>Order</label>
+          <div class="slider-row">
+            <input type="range" id="order" min="1" max="10" value="3">
+            <span class="slider-value" id="order-value">3</span>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label>Speed</label>
+          <div class="slider-row">
+            <input type="range" id="speed" min="1" max="100" value="50">
+          </div>
+        </div>
+
+        <div class="buttons">
+          <button class="action primary" id="start">Start</button>
+          <button class="action secondary" id="stop">Stop</button>
+          <button class="action secondary" id="clear">Clear</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="main-container">
+    <div class="left-panel">
+      <div class="panel-label">Corpus</div>
+      <textarea id="corpus" placeholder="Paste your corpus here..."></textarea>
+    </div>
+
+    <div class="right-panel">
+      <div class="panel-label">Output</div>
+      <div class="output-container" id="output-container">
+        <div class="output-wrapper">
+          <div id="output"></div><span class="cursor" id="cursor"></span>
+        </div>
+      </div>
+
+      <div class="status" id="status" style="display: none;"></div>
+    </div>
+  </div>
+
+  <div class="viz-section">
+    <div class="panel-label">Decision Visualization</div>
+    <div class="viz-panel">
+      <div class="viz-content" id="viz-content">
+        <div class="viz-empty" id="viz-empty">Start generating to see how the Markov chain makes decisions...</div>
+        
+        <!-- Trail Section -->
+        <div class="trail-section" id="trail-section" style="display: none;">
+          <div class="trail-nodes" id="trail-nodes"></div>
+        </div>
+
+        <!-- Decision Point Section -->
+        <div class="decision-section" id="decision-section" style="display: none;">
+          <div class="decision-connector"></div>
+          <div class="decision-point">
+            <div class="decision-node-wrapper">
+              <div class="decision-node" id="decision-node">?</div>
+            </div>
+            <div class="candidates-area" id="candidates-area">
+              <svg class="branch-lines" id="branch-lines"></svg>
+              <div class="candidates-list" id="candidates-list"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import MarkovGenerator from './markov-generator.js';
+
+    // UI
+    const generator = new MarkovGenerator();
+    let streamGenerator = null;
+    let isRunning = false;
+    let timeoutId = null;
+
+    const corpusEl = document.getElementById('corpus');
+    const outputEl = document.getElementById('output');
+    const cursorEl = document.getElementById('cursor');
+    const statusEl = document.getElementById('status');
+    const orderSlider = document.getElementById('order');
+    const orderValue = document.getElementById('order-value');
+    const speedSlider = document.getElementById('speed');
+    const modeWordBtn = document.getElementById('mode-word');
+    const modeCharBtn = document.getElementById('mode-char');
+    const startBtn = document.getElementById('start');
+    const stopBtn = document.getElementById('stop');
+    const clearBtn = document.getElementById('clear');
+
+    // Visualization elements
+    const vizEmpty = document.getElementById('viz-empty');
+    const trailSection = document.getElementById('trail-section');
+    const trailNodes = document.getElementById('trail-nodes');
+    const decisionSection = document.getElementById('decision-section');
+    const decisionNode = document.getElementById('decision-node');
+    const branchLines = document.getElementById('branch-lines');
+    const candidatesList = document.getElementById('candidates-list');
+
+    let mode = 'word';
+    let order = 3;
+    let lastMode = 'word';
+    let lastOrder = 3;
+    
+    // Trail state
+    const MAX_TRAIL_LENGTH = 8;
+    let trail = [];
+
+    // Mode toggle
+    modeWordBtn.addEventListener('click', () => {
+      mode = 'word';
+      modeWordBtn.classList.add('active');
+      modeCharBtn.classList.remove('active');
+      updateStatus();
+    });
+
+    modeCharBtn.addEventListener('click', () => {
+      mode = 'char';
+      modeCharBtn.classList.add('active');
+      modeWordBtn.classList.remove('active');
+      updateStatus();
+    });
+
+    // Order slider
+    orderSlider.addEventListener('input', () => {
+      order = parseInt(orderSlider.value);
+      orderValue.textContent = order;
+      updateStatus();
+    });
+
+    // Buttons
+    startBtn.addEventListener('click', start);
+    stopBtn.addEventListener('click', stop);
+    clearBtn.addEventListener('click', () => {
+      stop();
+      outputEl.textContent = '';
+      resetVisualization();
+    });
+
+    function getDelay() {
+      // Speed 1 = slow (500ms for word, 200ms for char)
+      // Speed 100 = fast (10ms for word, 5ms for char)
+      const speedVal = parseInt(speedSlider.value);
+      const baseDelay = mode === 'word' ? 500 : 200;
+      const minDelay = mode === 'word' ? 10 : 5;
+      return minDelay + (baseDelay - minDelay) * (1 - speedVal / 100);
+    }
+
+    function resetVisualization() {
+      trail = [];
+      trailNodes.innerHTML = '';
+      candidatesList.innerHTML = '';
+      branchLines.innerHTML = '';
+      decisionNode.textContent = '?';
+      decisionNode.classList.remove('decided');
+      vizEmpty.style.display = 'flex';
+      trailSection.style.display = 'none';
+      decisionSection.style.display = 'none';
+    }
+
+    function showVisualization() {
+      vizEmpty.style.display = 'none';
+      trailSection.style.display = 'flex';
+      decisionSection.style.display = 'flex';
+    }
+
+    function renderTrail(contextTokens) {
+      trailNodes.innerHTML = '';
+      
+      const contextSet = new Set(contextTokens.map((t, i) => trail.length - contextTokens.length + i));
+      
+      trail.forEach((token, index) => {
+        const nodeDiv = document.createElement('div');
+        nodeDiv.className = 'trail-node';
+        
+        const tokenSpan = document.createElement('span');
+        tokenSpan.className = 'trail-token';
+        
+        // Highlight tokens that are part of the current context
+        const contextStart = trail.length - contextTokens.length;
+        if (index >= contextStart && contextTokens.length > 0) {
+          tokenSpan.classList.add('context');
+        }
+        
+        // Display token (escape special chars for display)
+        tokenSpan.textContent = displayToken(token);
+        tokenSpan.title = token; // Full token on hover
+        nodeDiv.appendChild(tokenSpan);
+        
+        // Add connector after token (except for last one)
+        if (index < trail.length - 1) {
+          const connector = document.createElement('div');
+          connector.className = 'trail-connector';
+          nodeDiv.appendChild(connector);
+        }
+        
+        trailNodes.appendChild(nodeDiv);
+      });
+    }
+
+    function displayToken(token) {
+      // Make whitespace visible
+      if (token === ' ') return '␣';
+      if (token === '\n') return '↵';
+      if (token === '\t') return '→';
+      return token;
+    }
+
+    function renderCandidates(candidates, selectedToken) {
+      candidatesList.innerHTML = '';
+      branchLines.innerHTML = '';
+      
+      // Limit to top 8 candidates for display
+      const displayCandidates = candidates.slice(0, 8);
+      
+      // Create SVG namespace
+      const svgNS = 'http://www.w3.org/2000/svg';
+      
+      displayCandidates.forEach((candidate, index) => {
+        const div = document.createElement('div');
+        div.className = 'candidate';
+        div.style.animationDelay = `${index * 0.05}s`;
+        
+        if (candidate.token === selectedToken) {
+          div.classList.add('selected');
+        }
+        
+        const tokenSpan = document.createElement('span');
+        tokenSpan.className = 'candidate-token';
+        tokenSpan.textContent = displayToken(candidate.token);
+        tokenSpan.title = candidate.token;
+        
+        const barContainer = document.createElement('div');
+        barContainer.className = 'frequency-bar-container';
+        
+        const bar = document.createElement('div');
+        bar.className = 'frequency-bar';
+        bar.style.width = `${candidate.frequency * 100}%`;
+        barContainer.appendChild(bar);
+        
+        const label = document.createElement('span');
+        label.className = 'frequency-label';
+        label.textContent = `${Math.round(candidate.frequency * 100)}%`;
+        
+        div.appendChild(tokenSpan);
+        div.appendChild(barContainer);
+        div.appendChild(label);
+        candidatesList.appendChild(div);
+      });
+
+      // Draw branch lines after candidates have animated into position
+      setTimeout(() => {
+        drawBranchLines(displayCandidates, selectedToken);
+      }, 50);
+    }
+
+    function drawBranchLines(candidates, selectedToken) {
+      const svgNS = 'http://www.w3.org/2000/svg';
+      branchLines.innerHTML = '';
+      
+      const candidateElements = candidatesList.querySelectorAll('.candidate');
+      if (candidateElements.length === 0) return;
+      
+      const svgRect = branchLines.getBoundingClientRect();
+      
+      // Start from left edge of SVG (which is right at decision node)
+      const startX = 0;
+      
+      // Get first candidate to determine the baseline Y
+      const firstCandidateRect = candidateElements[0].getBoundingClientRect();
+      const startY = firstCandidateRect.top + firstCandidateRect.height / 2 - svgRect.top;
+      
+      candidateElements.forEach((el, index) => {
+        const rect = el.getBoundingClientRect();
+        const endX = 40;
+        const endY = rect.top + rect.height / 2 - svgRect.top;
+        
+        const path = document.createElementNS(svgNS, 'path');
+        let d;
+        
+        if (index === 0) {
+          // First candidate: straight horizontal line
+          d = `M ${startX} ${startY} L ${endX} ${endY}`;
+        } else {
+          // Additional candidates: curve down from the start point
+          const midX = 20;
+          d = `M ${startX} ${startY} Q ${midX} ${startY} ${midX} ${(startY + endY) / 2} Q ${midX} ${endY} ${endX} ${endY}`;
+        }
+        
+        path.setAttribute('d', d);
+        path.classList.add('branch-line');
+        
+        if (candidates[index]?.token === selectedToken) {
+          path.classList.add('selected');
+        }
+        
+        branchLines.appendChild(path);
+      });
+    }
+
+    function start() {
+      const corpus = corpusEl.value.trim();
+      if (!corpus) {
+        statusEl.textContent = 'Please paste a corpus first.';
+        return;
+      }
+
+      generator.train(corpus);
+      
+      if (!isRunning) {
+        outputEl.textContent = '';
+        resetVisualization();
+      }
+      
+      isRunning = true;
+      cursorEl.style.display = 'inline-block';
+      streamGenerator = generator.generateStreamWithCandidates(mode, order);
+      lastMode = mode;
+      lastOrder = order;
+      tick();
+    }
+
+    function stop() {
+      isRunning = false;
+      cursorEl.style.display = 'none';
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+    }
+
+    function tick() {
+      if (!isRunning) return;
+
+      // Check if settings changed — if so, create new generator
+      if (mode !== lastMode || order !== lastOrder) {
+        streamGenerator = generator.generateStreamWithCandidates(mode, order);
+        lastMode = mode;
+        lastOrder = order;
+        resetVisualization();
+      }
+
+      const result = streamGenerator.next();
+      
+      if (result.done) {
+        streamGenerator = generator.generateStreamWithCandidates(mode, order);
+        timeoutId = setTimeout(tick, getDelay());
+        return;
+      }
+
+      const { token, mode: tokenMode, context, candidates, isInitial } = result.value;
+      
+      if (isInitial) {
+        // Initial seed tokens - just add to output and trail
+        if (tokenMode === 'word' && outputEl.textContent.length > 0) {
+          outputEl.textContent += ' ';
+        }
+        outputEl.textContent += token;
+        
+        trail.push(token);
+        if (trail.length > MAX_TRAIL_LENGTH) trail.shift();
+        
+        showVisualization();
+        renderTrail([]);
+        
+        // Scroll and continue
+        const container = document.getElementById('output-container');
+        container.scrollTop = container.scrollHeight;
+        updateStatus();
+        timeoutId = setTimeout(tick, getDelay() / 3); // Faster for initial tokens
+        return;
+      }
+
+      // Two-phase visualization for decision
+      showVisualization();
+      
+      // Phase 1: Show context and candidates (decision point shows "?")
+      renderTrail(context);
+      decisionNode.textContent = '?';
+      decisionNode.classList.remove('decided');
+      renderCandidates(candidates, null); // No selection yet
+      
+      // Speed-based timing: slower speed = more time to see each phase
+      const speedVal = parseInt(speedSlider.value);
+      const speedFactor = 1 - (speedVal / 100); // 0 at max speed, 1 at min speed
+      
+      // Time for candidates to appear (minimum for animation, scales with speed)
+      const numCandidates = Math.min(candidates.length, 8);
+      const candidateAppearTime = 100 + (numCandidates * 50) + (speedFactor * 400);
+      
+      // Time to see selection highlighted before moving on
+      const selectionPause = 100 + (speedFactor * 500);
+      
+      // Time before next tick
+      const nextTickDelay = 50 + (speedFactor * 300);
+      
+      // Phase 2: After candidates have appeared, show the selection
+      timeoutId = setTimeout(() => {
+        if (!isRunning) return;
+        
+        // Highlight the selected candidate
+        decisionNode.textContent = displayToken(token);
+        decisionNode.classList.add('decided');
+        
+        // Update candidates to show selection
+        const candidateEls = candidatesList.querySelectorAll('.candidate');
+        candidateEls.forEach((el, i) => {
+          if (candidates[i]?.token === token) {
+            el.classList.add('selected');
+          }
+        });
+        
+        // Update branch lines to highlight selected
+        const lines = branchLines.querySelectorAll('.branch-line');
+        lines.forEach((line, i) => {
+          if (candidates[i]?.token === token) {
+            line.classList.add('selected');
+          }
+        });
+        
+        // Phase 3: After pause to see selection, add to output and trail
+        timeoutId = setTimeout(() => {
+          if (!isRunning) return;
+          
+          // Add to output
+          if (tokenMode === 'word' && outputEl.textContent.length > 0) {
+            outputEl.textContent += ' ';
+          }
+          outputEl.textContent += token;
+          
+          // Add to trail
+          trail.push(token);
+          if (trail.length > MAX_TRAIL_LENGTH) trail.shift();
+          
+          // Clear decision point for next round
+          decisionNode.textContent = '?';
+          decisionNode.classList.remove('decided');
+          candidatesList.innerHTML = '';
+          branchLines.innerHTML = '';
+          
+          // Scroll output container
+          const container = document.getElementById('output-container');
+          container.scrollTop = container.scrollHeight;
+
+          updateStatus();
+          timeoutId = setTimeout(tick, nextTickDelay);
+        }, selectionPause);
+        
+      }, candidateAppearTime);
+    }
+
+    function updateStatus() {
+      const tokens = mode === 'word' ? generator.wordTokens.length : generator.charTokens.length;
+      if (tokens > 0) {
+        statusEl.textContent = `${mode} mode, order ${order}, ${tokens} tokens`;
+      }
+    }
+  </script>
+</body>
+</html>
